@@ -1,0 +1,6 @@
+"0","print(paste0(""Anzahl Inserate von Wohnungen zu kaufen im Zeitraum: "", nrow(anzahl_inserat_kaufen)))
+"
+"1","[1]"
+"1"," ""Anzahl Inserate von Wohnungen zu kaufen im Zeitraum: 173"""
+"1","
+"

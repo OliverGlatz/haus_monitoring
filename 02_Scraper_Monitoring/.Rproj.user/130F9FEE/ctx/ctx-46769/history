@@ -1,0 +1,512 @@
+kaltmiete = as.numeric(str_replace_all(kaltmiete, c("[.]" = "", " €" = "","[,]" = "."))),
+warmmiete = as.numeric(str_replace_all(warmmiete, c("[.]" = "", " €" = "","[,]" = "."))),
+hausgeld = as.numeric(str_replace_all(hausgeld, c("[.]" = "","[,]" = ".", " €" = ""))),
+provision = if_else(str_detect(provision, "Nein"), FALSE, TRUE),
+wohnflaeche = as.numeric(str_replace_all(wohnflaeche, c("[.]" = "","[,]" = ".", " m²" = ""))),
+nutzflaeche = as.numeric(str_replace_all(nutzflaeche, c("[.]" = "","[,]" = ".", " m²" = ""))),
+grundstück = as.numeric(str_replace_all(grundstück, c("[.]" = "","[,]" = ".", " m²" = ""))),
+zimmer = as.numeric(str_replace_all(zimmer, c("[,]" = "."))),
+schlafzimmer = as.numeric(str_replace_all(schlafzimmer, c("[,]" = "."))),
+badezimmer = as.numeric(str_replace_all(badezimmer, c("[,]" = "."))),
+ortsteil = stri_extract_last_words(adresse),
+plz_inserat = as.character(if_else(!grepl("[^0-9]", substr(adresse, 1, 5)),substr(adresse, 1, 5),"")),
+miete_kaufen = if_else(!is.na(kaltmiete),"miete", "kaufen")) %>%
+mutate(kaufpreis_pro_qm = (kaufpreis/wohnflaeche),
+miete_pro_qm = (kaltmiete/wohnflaeche))
+# Definieren Wohnung und Haus
+df <- df %>%
+mutate(wohnung_haus = case_when(
+typ == "Bauernhaus" ~ "Haus",
+typ == "Besondere Immobilie" ~ "Sonstiges",
+typ == "Bungalow" ~ "Haus",
+typ == "Burg/Schloss" ~ "Sonstiges",
+typ == "Dachgeschoss" ~ "Wohnung",
+typ == "Doppelhaushälfte" ~ "Haus",
+typ == "Einfamilienhaus (freistehend)" ~ "Haus",
+typ == "Erdgeschosswohnung" ~ "Wohnung",
+typ == "Etagenwohnung" ~ "Wohnung",
+typ == "Hochparterre" ~ "Wohnung",
+typ == "Loft" ~ "Wohnung",
+typ == "Maisonette" ~ "Wohnung",
+typ == "Mehrfamilienhaus" ~ "Haus",
+typ == "Penthouse" ~ "Wohnung",
+typ == "Reiheneckhaus" ~ "Haus",
+typ == "Reihenmittelhaus" ~ "Haus",
+typ == "Sonstige" ~ "Sonstiges",
+typ == "Souterrain" ~ "Wohnung",
+typ == "Terrassenwohnung" ~ "Wohnung",
+typ == "Villa" ~ "Haus",
+typ == "Wohnimmobilie (sonstige)" ~ "Sonstiges",
+is.na(typ) ~ "Sonstiges"))
+# clean monitoring daten
+monitor_data <- monitor_data %>%
+mutate(vec_preis2 = as.numeric(str_replace_all(vec_preis, c("[.]" = "", " €" = "","[,]" = "."))))
+monitor_data <- monitor_data %>%
+mutate(Datum = as.Date(substr(Timestamp_scrape, 1, 10))) %>%
+rename(id_inserat = Inserate_ID)
+# get info ob mieten oder kaufen und Haus/Wohnung
+id_mieten_kaufen <- df %>% select(id_inserat, miete_kaufen, wohnung_haus) %>% distinct()
+# get initiale Miete
+init_preis <- df %>% select(id_inserat, kaltmiete, kaufpreis) %>% distinct()
+# join info
+monitor_data <- monitor_data %>%
+left_join(id_mieten_kaufen, by = c("id_inserat")) %>%
+left_join(init_preis, by = c("id_inserat"))
+monitor_data_miete <- monitor_data %>%
+filter(miete_kaufen == "miete")
+monitor_data_kaufen <- monitor_data %>%
+filter(miete_kaufen == "kaufen", wohnung_haus == "Wohnung")
+# Dauer des Monitorings
+timerange_days = difftime(max(monitor_data$Datum),  min(monitor_data$Datum), units = "days") # days
+timerange_days
+# Anzahl inserate
+anzahl_inserat_miete <- monitor_data_miete %>%
+distinct(id_inserat)
+anzahl_inserat_miete
+# Anzahl inserate
+anzahl_inserat_kaufen <- monitor_data_kaufen %>%
+distinct(id_inserat)
+anzahl_inserat_kaufen
+print(paste0("Anzahl Inserate von Mietwohnungen im Zeitraum: "nrow(anzahl_inserat_miete)))
+print(paste0("Anzahl Inserate von Mietwohnungen im Zeitraum: "nrow(anzahl_inserat_miete)))
+print(paste0("Anzahl Inserate von Mietwohnungen im Zeitraum: ", nrow(anzahl_inserat_miete)))
+print(paste0("Anzahl Inserate von Wohnungen zu kaufen im Zeitraum: ", nrow(anzahl_inserat_kaufen)))
+# Anzahl inserate
+anzahl_inserat_miete <- monitor_data_miete %>%
+distinct(id_inserat)
+print(paste0("Anzahl Inserate von Mietwohnungen im Zeitraum: ", nrow(anzahl_inserat_miete)))
+# Anzahl inserate
+anzahl_inserat_kaufen <- monitor_data_kaufen %>%
+distinct(id_inserat)
+print(paste0("Anzahl Inserate von Wohnungen zu kaufen im Zeitraum: ", nrow(anzahl_inserat_kaufen)))
+# Anzahl Inserate pro Tag Wohnung mieten
+anzahl_pro_tag_miete <- monitor_data_miete %>%
+distinct(Datum, id_inserat) %>%
+group_by(Datum) %>%
+summarise(anzahl_miete = n())
+# Anzahl Inserate pro Tag Wohnung mieten
+anzahl_pro_tag_kaufen <- monitor_data_kaufen %>%
+distinct(Datum, id_inserat) %>%
+group_by(Datum) %>%
+summarise(anzahl_kaufen = n())
+# Create Dataframe
+dates <- data.frame(Datum = seq(as.Date(min(monitor_data$Datum)), as.Date(max(monitor_data$Datum)), by = 'days'))
+# join infos
+dates <- dates %>%
+left_join(anzahl_pro_tag_miete, by = c("Datum")) %>%
+left_join(anzahl_pro_tag_kaufen, by = c("Datum"))
+dates
+# Anzahl Inserate pro Tag Wohnung mieten
+dauer_tage <- monitor_data_miete %>%
+distinct(Datum, id_inserat) %>%
+group_by(id_inserat) %>%
+summarise(anzahl_tage = n())
+ggplot(data = dauer_tage, aes(x=anzahl_tage)) +
+geom_boxplot()
+# Anzahl Inserate pro Tag Wohnung mieten
+dauer_tage <- monitor_data_miete %>%
+distinct(Datum, id_inserat) %>%
+group_by(id_inserat) %>%
+summarise(anzahl_tage = n()) %>%
+ggplot(aes(x=anzahl_tage)) +
+geom_boxplot() +
+ggtitle("Wie lange ist ein Mietinserat durchschn. online in Stuttgatr")
+# Anzahl Inserate pro Tag Wohnung mieten
+monitor_data_miete %>%
+distinct(Datum, id_inserat) %>%
+group_by(id_inserat) %>%
+summarise(anzahl_tage = n()) %>%
+ggplot(aes(x=anzahl_tage)) +
+geom_boxplot() +
+ggtitle("Wie lange ist ein Mietinserat durchschn. online in Stuttgart")
+# Anzahl Inserate pro Tag Wohnung mieten
+monitor_data_kaufen %>%
+distinct(Datum, id_inserat) %>%
+group_by(id_inserat) %>%
+summarise(anzahl_tage = n()) %>%
+ggplot(aes(x=anzahl_tage)) +
+geom_boxplot() +
+ggtitle("Wie lange ist ein Mietinserat durchschn. online in Stuttgart")
+```{r}
+miete_senkung <- monitor_data_miete %>%
+mutate(neuer_preis = kaltmiete - vec_preis2) %>%
+filter(neuer_preis < 0) %>%
+distinct(id_inserat, neuer_preis)
+print(paste0(nrow(miete_senkung)," von ",nrow(anzahl_inserat_miete), " Inserate haben im durchschnitt um ",
+round(mean(miete_senkung$neuer_preis),2), " Euro ihren Preis gesenkt"))
+kaufen_senkung <- monitor_data_kaufen %>%
+mutate(neuer_preis = kaufpreis - vec_preis2) %>%
+filter(neuer_preis < 0) %>%
+distinct(id_inserat, neuer_preis)
+print(paste0(nrow(kaufen_senkung)," von ",nrow(anzahl_inserat_miete), " Inserate haben im durchschnitt um ",
+round(mean(kaufen_senkung$neuer_preis),2), " Euro ihren Preis gesenkt"))
+print(paste0(nrow(kaufen_senkung)," von ",nrow(anzahl_inserat_kaufen), " Inserate haben im durchschnitt um ",
+round(mean(kaufen_senkung$neuer_preis),2), " Euro ihren Preis gesenkt"))
+ggplot(dates, aes(Datum)) +
+geom_line(aes(y = anzahl_miete, colour = "anzahl_miete")) +
+geom_line(aes(y = anzahl_kaufen, colour = "anzahl_kaufen"))
+knitr::opts_chunk$set(echo = TRUE)
+# load package
+library(tidyverse)
+library(stringi)
+library(ggplot2)
+# load data
+monitor_data <- read_delim("monitor_data.csv",
+"~", escape_double = FALSE, col_types = cols(Inserate_ID = col_character()),
+trim_ws = TRUE)
+df <- read_delim("01_ordner_inserate/04_merged_immoscout.csv",
+"~", escape_double = FALSE, col_types = cols(badezimmer = col_character(),
+etage = col_character(), grundstück = col_character(),
+hausgeld = col_character(), id_inserat = col_character(),
+kaltmiete = col_character(), kaufpreis = col_character(),
+provision = col_character(), schlafzimmer = col_character(),
+typ = col_character(), warmmiete = col_character(),
+zimmer = col_character()), trim_ws = TRUE)
+# data cleaning
+df <- df %>%
+mutate(kaufpreis = as.numeric(str_replace_all(kaufpreis, c("[.]" = "", " €" = "","[,]" = "."))),
+kaltmiete = as.numeric(str_replace_all(kaltmiete, c("[.]" = "", " €" = "","[,]" = "."))),
+warmmiete = as.numeric(str_replace_all(warmmiete, c("[.]" = "", " €" = "","[,]" = "."))),
+hausgeld = as.numeric(str_replace_all(hausgeld, c("[.]" = "","[,]" = ".", " €" = ""))),
+provision = if_else(str_detect(provision, "Nein"), FALSE, TRUE),
+wohnflaeche = as.numeric(str_replace_all(wohnflaeche, c("[.]" = "","[,]" = ".", " m²" = ""))),
+nutzflaeche = as.numeric(str_replace_all(nutzflaeche, c("[.]" = "","[,]" = ".", " m²" = ""))),
+grundstück = as.numeric(str_replace_all(grundstück, c("[.]" = "","[,]" = ".", " m²" = ""))),
+zimmer = as.numeric(str_replace_all(zimmer, c("[,]" = "."))),
+schlafzimmer = as.numeric(str_replace_all(schlafzimmer, c("[,]" = "."))),
+badezimmer = as.numeric(str_replace_all(badezimmer, c("[,]" = "."))),
+ortsteil = stri_extract_last_words(adresse),
+plz_inserat = as.character(if_else(!grepl("[^0-9]", substr(adresse, 1, 5)),substr(adresse, 1, 5),"")),
+miete_kaufen = if_else(!is.na(kaltmiete),"miete", "kaufen")) %>%
+mutate(kaufpreis_pro_qm = (kaufpreis/wohnflaeche),
+miete_pro_qm = (kaltmiete/wohnflaeche))
+# Definieren Wohnung und Haus
+df <- df %>%
+mutate(wohnung_haus = case_when(
+typ == "Bauernhaus" ~ "Haus",
+typ == "Besondere Immobilie" ~ "Sonstiges",
+typ == "Bungalow" ~ "Haus",
+typ == "Burg/Schloss" ~ "Sonstiges",
+typ == "Dachgeschoss" ~ "Wohnung",
+typ == "Doppelhaushälfte" ~ "Haus",
+typ == "Einfamilienhaus (freistehend)" ~ "Haus",
+typ == "Erdgeschosswohnung" ~ "Wohnung",
+typ == "Etagenwohnung" ~ "Wohnung",
+typ == "Hochparterre" ~ "Wohnung",
+typ == "Loft" ~ "Wohnung",
+typ == "Maisonette" ~ "Wohnung",
+typ == "Mehrfamilienhaus" ~ "Haus",
+typ == "Penthouse" ~ "Wohnung",
+typ == "Reiheneckhaus" ~ "Haus",
+typ == "Reihenmittelhaus" ~ "Haus",
+typ == "Sonstige" ~ "Sonstiges",
+typ == "Souterrain" ~ "Wohnung",
+typ == "Terrassenwohnung" ~ "Wohnung",
+typ == "Villa" ~ "Haus",
+typ == "Wohnimmobilie (sonstige)" ~ "Sonstiges",
+is.na(typ) ~ "Sonstiges"))
+# clean monitoring daten
+monitor_data <- monitor_data %>%
+mutate(vec_preis2 = as.numeric(str_replace_all(vec_preis, c("[.]" = "", " €" = "","[,]" = "."))))
+monitor_data <- monitor_data %>%
+mutate(Datum = as.Date(substr(Timestamp_scrape, 1, 10))) %>%
+rename(id_inserat = Inserate_ID)
+# get info ob mieten oder kaufen und Haus/Wohnung
+id_mieten_kaufen <- df %>% select(id_inserat, miete_kaufen, wohnung_haus) %>% distinct()
+# get initiale Miete
+init_preis <- df %>% select(id_inserat, kaltmiete, kaufpreis) %>% distinct()
+# join info
+monitor_data <- monitor_data %>%
+left_join(id_mieten_kaufen, by = c("id_inserat")) %>%
+left_join(init_preis, by = c("id_inserat"))
+monitor_data_miete <- monitor_data %>%
+filter(miete_kaufen == "miete")
+monitor_data_kaufen <- monitor_data %>%
+filter(miete_kaufen == "kaufen", wohnung_haus == "Wohnung")
+# Dauer des Monitorings
+timerange_days = difftime(max(monitor_data$Datum),  min(monitor_data$Datum), units = "days") # days
+timerange_days
+# Anzahl inserate
+anzahl_inserat_miete <- monitor_data_miete %>%
+distinct(id_inserat)
+print(paste0("Anzahl Inserate von Mietwohnungen im Zeitraum: ", nrow(anzahl_inserat_miete)))
+# Anzahl inserate
+anzahl_inserat_kaufen <- monitor_data_kaufen %>%
+distinct(id_inserat)
+print(paste0("Anzahl Inserate von Wohnungen zu kaufen im Zeitraum: ", nrow(anzahl_inserat_kaufen)))
+# Anzahl Inserate pro Tag Wohnung mieten
+anzahl_pro_tag_miete <- monitor_data_miete %>%
+distinct(Datum, id_inserat) %>%
+group_by(Datum) %>%
+summarise(anzahl_miete = n())
+# Anzahl Inserate pro Tag Wohnung mieten
+anzahl_pro_tag_kaufen <- monitor_data_kaufen %>%
+distinct(Datum, id_inserat) %>%
+group_by(Datum) %>%
+summarise(anzahl_kaufen = n())
+# Create Dataframe
+dates <- data.frame(Datum = seq(as.Date(min(monitor_data$Datum)), as.Date(max(monitor_data$Datum)), by = 'days'))
+# join infos
+dates <- dates %>%
+left_join(anzahl_pro_tag_miete, by = c("Datum")) %>%
+left_join(anzahl_pro_tag_kaufen, by = c("Datum"))
+dates
+ggplot(dates, aes(Datum)) +
+geom_line(aes(y = anzahl_miete, colour = "anzahl_miete")) +
+geom_line(aes(y = anzahl_kaufen, colour = "anzahl_kaufen"))
+knitr::opts_chunk$set(echo = TRUE)
+# load package
+library(tidyverse)
+library(stringi)
+library(ggplot2)
+library(leaflet)
+# load data
+monitor_data <- read_delim("monitor_data.csv",
+"~", escape_double = FALSE, col_types = cols(Inserate_ID = col_character()),
+trim_ws = TRUE)
+df <- read_delim("01_ordner_inserate/04_merged_immoscout.csv",
+"~", escape_double = FALSE, col_types = cols(badezimmer = col_character(),
+etage = col_character(), grundstück = col_character(),
+hausgeld = col_character(), id_inserat = col_character(),
+kaltmiete = col_character(), kaufpreis = col_character(),
+provision = col_character(), schlafzimmer = col_character(),
+typ = col_character(), warmmiete = col_character(),
+zimmer = col_character()), trim_ws = TRUE)
+miete <- df %>% filter(miete_kaufen = "miete")
+miete <- df %>% filter(miete_kaufen == "miete")
+miete <- df %>% filter(miete_kaufen == "mieten")
+miete <- df %>% filter(miete_kaufen == "miete")
+knitr::opts_chunk$set(echo = TRUE)
+# load package
+library(tidyverse)
+library(stringi)
+library(ggplot2)
+library(leaflet)
+# load data
+monitor_data <- read_delim("monitor_data.csv",
+"~", escape_double = FALSE, col_types = cols(Inserate_ID = col_character()),
+trim_ws = TRUE)
+df <- read_delim("01_ordner_inserate/04_merged_immoscout.csv",
+"~", escape_double = FALSE, col_types = cols(badezimmer = col_character(),
+etage = col_character(), grundstück = col_character(),
+hausgeld = col_character(), id_inserat = col_character(),
+kaltmiete = col_character(), kaufpreis = col_character(),
+provision = col_character(), schlafzimmer = col_character(),
+typ = col_character(), warmmiete = col_character(),
+zimmer = col_character()), trim_ws = TRUE)
+# data cleaning
+df <- df %>%
+mutate(kaufpreis = as.numeric(str_replace_all(kaufpreis, c("[.]" = "", " €" = "","[,]" = "."))),
+kaltmiete = as.numeric(str_replace_all(kaltmiete, c("[.]" = "", " €" = "","[,]" = "."))),
+warmmiete = as.numeric(str_replace_all(warmmiete, c("[.]" = "", " €" = "","[,]" = "."))),
+hausgeld = as.numeric(str_replace_all(hausgeld, c("[.]" = "","[,]" = ".", " €" = ""))),
+provision = if_else(str_detect(provision, "Nein"), FALSE, TRUE),
+wohnflaeche = as.numeric(str_replace_all(wohnflaeche, c("[.]" = "","[,]" = ".", " m²" = ""))),
+nutzflaeche = as.numeric(str_replace_all(nutzflaeche, c("[.]" = "","[,]" = ".", " m²" = ""))),
+grundstück = as.numeric(str_replace_all(grundstück, c("[.]" = "","[,]" = ".", " m²" = ""))),
+zimmer = as.numeric(str_replace_all(zimmer, c("[,]" = "."))),
+schlafzimmer = as.numeric(str_replace_all(schlafzimmer, c("[,]" = "."))),
+badezimmer = as.numeric(str_replace_all(badezimmer, c("[,]" = "."))),
+ortsteil = stri_extract_last_words(adresse),
+plz_inserat = as.character(if_else(!grepl("[^0-9]", substr(adresse, 1, 5)),substr(adresse, 1, 5),"")),
+miete_kaufen = if_else(!is.na(kaltmiete),"miete", "kaufen")) %>%
+mutate(kaufpreis_pro_qm = (kaufpreis/wohnflaeche),
+miete_pro_qm = (kaltmiete/wohnflaeche))
+# Definieren Wohnung und Haus
+df <- df %>%
+mutate(wohnung_haus = case_when(
+typ == "Bauernhaus" ~ "Haus",
+typ == "Besondere Immobilie" ~ "Sonstiges",
+typ == "Bungalow" ~ "Haus",
+typ == "Burg/Schloss" ~ "Sonstiges",
+typ == "Dachgeschoss" ~ "Wohnung",
+typ == "Doppelhaushälfte" ~ "Haus",
+typ == "Einfamilienhaus (freistehend)" ~ "Haus",
+typ == "Erdgeschosswohnung" ~ "Wohnung",
+typ == "Etagenwohnung" ~ "Wohnung",
+typ == "Hochparterre" ~ "Wohnung",
+typ == "Loft" ~ "Wohnung",
+typ == "Maisonette" ~ "Wohnung",
+typ == "Mehrfamilienhaus" ~ "Haus",
+typ == "Penthouse" ~ "Wohnung",
+typ == "Reiheneckhaus" ~ "Haus",
+typ == "Reihenmittelhaus" ~ "Haus",
+typ == "Sonstige" ~ "Sonstiges",
+typ == "Souterrain" ~ "Wohnung",
+typ == "Terrassenwohnung" ~ "Wohnung",
+typ == "Villa" ~ "Haus",
+typ == "Wohnimmobilie (sonstige)" ~ "Sonstiges",
+is.na(typ) ~ "Sonstiges"))
+# clean monitoring daten
+monitor_data <- monitor_data %>%
+mutate(vec_preis2 = as.numeric(str_replace_all(vec_preis, c("[.]" = "", " €" = "","[,]" = "."))))
+monitor_data <- monitor_data %>%
+mutate(Datum = as.Date(substr(Timestamp_scrape, 1, 10))) %>%
+rename(id_inserat = Inserate_ID)
+# get info ob mieten oder kaufen und Haus/Wohnung
+id_mieten_kaufen <- df %>% select(id_inserat, miete_kaufen, wohnung_haus) %>% distinct()
+# get initiale Miete
+init_preis <- df %>% select(id_inserat, kaltmiete, kaufpreis) %>% distinct()
+# join info
+monitor_data <- monitor_data %>%
+left_join(id_mieten_kaufen, by = c("id_inserat")) %>%
+left_join(init_preis, by = c("id_inserat"))
+monitor_data_miete <- monitor_data %>%
+filter(miete_kaufen == "miete")
+monitor_data_kaufen <- monitor_data %>%
+filter(miete_kaufen == "kaufen", wohnung_haus == "Wohnung")
+miete <- df %>% filter(miete_kaufen == "miete")
+miete %>%
+leaflet() %>%
+addProviderTiles("CartoDB") %>%
+addCircleMarkers(radius = 2, color = ~pal(kaufpreis),
+label = ~paste0(as.character(kaufpreis)," €" )) %>%
+addLegend(title = "Kaufpreis m²/€", pal = pal, values = vec_scale_kaufpreis,
+position = "bottomright")
+vec_scale_preis <- c(min(miete$kaltmiete), max(miete$kaltmiete))
+pal <- colorNumeric(palette = "Reds", domain = vec_scale_preis, reverse = FALSE)
+miete %>%
+leaflet() %>%
+addProviderTiles("CartoDB") %>%
+addCircleMarkers(radius = 2, color = ~pal(kaufpreis),
+label = ~paste0(as.character(kaufpreis)," €" )) %>%
+addLegend(title = "Kaufpreis m²/€", pal = pal, values = vec_scale_preis,
+position = "bottomright")
+knitr::opts_chunk$set(echo = TRUE)
+# load package
+library(tidyverse)
+library(stringi)
+library(ggplot2)
+library(leaflet)
+# load data
+monitor_data <- read_delim("monitor_data.csv",
+"~", escape_double = FALSE, col_types = cols(Inserate_ID = col_character()),
+trim_ws = TRUE)
+df <- read_delim("01_ordner_inserate/04_merged_immoscout.csv",
+"~", escape_double = FALSE, col_types = cols(badezimmer = col_character(),
+etage = col_character(), grundstück = col_character(),
+hausgeld = col_character(), id_inserat = col_character(),
+kaltmiete = col_character(), kaufpreis = col_character(),
+provision = col_character(), schlafzimmer = col_character(),
+typ = col_character(), warmmiete = col_character(),
+zimmer = col_character()), trim_ws = TRUE)
+## PLZ und Geodaten von Deutschland - load csv
+PLZ <- read_delim("01_Scraper/04_ordner_stammdaten/PLZ.csv",
+";", escape_double = FALSE, col_names = FALSE,
+col_types = cols(X1 = col_character()),
+trim_ws = TRUE)
+## PLZ und Geodaten von Deutschland - load csv
+PLZ <- read_delim("../01_Scraper/04_ordner_stammdaten/PLZ.csv",
+";", escape_double = FALSE, col_names = FALSE,
+col_types = cols(X1 = col_character()),
+trim_ws = TRUE)
+## PLZ und Geo-Daten bereinigen
+PLZ <- PLZ %>%
+rename(plz_inserat = X1,
+stadtname = X2,
+lng = X3,
+lat = X4) %>%
+mutate(plz_inserat = as.character(if_else(nchar(plz_inserat)==4,paste0("0",plz_inserat),plz_inserat)),
+stadtname = str_replace_all(stadtname, c("Ã¼" = "ue","Ã¶" = "oe", "ÃŸ" = "ss", "Ã¤" = "ae")))
+# data cleaning
+df <- df %>%
+mutate(kaufpreis = as.numeric(str_replace_all(kaufpreis, c("[.]" = "", " €" = "","[,]" = "."))),
+kaltmiete = as.numeric(str_replace_all(kaltmiete, c("[.]" = "", " €" = "","[,]" = "."))),
+warmmiete = as.numeric(str_replace_all(warmmiete, c("[.]" = "", " €" = "","[,]" = "."))),
+hausgeld = as.numeric(str_replace_all(hausgeld, c("[.]" = "","[,]" = ".", " €" = ""))),
+provision = if_else(str_detect(provision, "Nein"), FALSE, TRUE),
+wohnflaeche = as.numeric(str_replace_all(wohnflaeche, c("[.]" = "","[,]" = ".", " m²" = ""))),
+nutzflaeche = as.numeric(str_replace_all(nutzflaeche, c("[.]" = "","[,]" = ".", " m²" = ""))),
+grundstück = as.numeric(str_replace_all(grundstück, c("[.]" = "","[,]" = ".", " m²" = ""))),
+zimmer = as.numeric(str_replace_all(zimmer, c("[,]" = "."))),
+schlafzimmer = as.numeric(str_replace_all(schlafzimmer, c("[,]" = "."))),
+badezimmer = as.numeric(str_replace_all(badezimmer, c("[,]" = "."))),
+ortsteil = stri_extract_last_words(adresse),
+plz_inserat = as.character(if_else(!grepl("[^0-9]", substr(adresse, 1, 5)),substr(adresse, 1, 5),"")),
+miete_kaufen = if_else(!is.na(kaltmiete),"miete", "kaufen")) %>%
+mutate(kaufpreis_pro_qm = (kaufpreis/wohnflaeche),
+miete_pro_qm = (kaltmiete/wohnflaeche)) %>%
+dplyr::select(-stadtname) %>%
+left_join(PLZ, by = c("plz_inserat")) %>%
+filter(!is.na(stadtname))
+# Definieren Wohnung und Haus
+df <- df %>%
+mutate(wohnung_haus = case_when(
+typ == "Bauernhaus" ~ "Haus",
+typ == "Besondere Immobilie" ~ "Sonstiges",
+typ == "Bungalow" ~ "Haus",
+typ == "Burg/Schloss" ~ "Sonstiges",
+typ == "Dachgeschoss" ~ "Wohnung",
+typ == "Doppelhaushälfte" ~ "Haus",
+typ == "Einfamilienhaus (freistehend)" ~ "Haus",
+typ == "Erdgeschosswohnung" ~ "Wohnung",
+typ == "Etagenwohnung" ~ "Wohnung",
+typ == "Hochparterre" ~ "Wohnung",
+typ == "Loft" ~ "Wohnung",
+typ == "Maisonette" ~ "Wohnung",
+typ == "Mehrfamilienhaus" ~ "Haus",
+typ == "Penthouse" ~ "Wohnung",
+typ == "Reiheneckhaus" ~ "Haus",
+typ == "Reihenmittelhaus" ~ "Haus",
+typ == "Sonstige" ~ "Sonstiges",
+typ == "Souterrain" ~ "Wohnung",
+typ == "Terrassenwohnung" ~ "Wohnung",
+typ == "Villa" ~ "Haus",
+typ == "Wohnimmobilie (sonstige)" ~ "Sonstiges",
+is.na(typ) ~ "Sonstiges"))
+# clean monitoring daten
+monitor_data <- monitor_data %>%
+mutate(vec_preis2 = as.numeric(str_replace_all(vec_preis, c("[.]" = "", " €" = "","[,]" = "."))))
+monitor_data <- monitor_data %>%
+mutate(Datum = as.Date(substr(Timestamp_scrape, 1, 10))) %>%
+rename(id_inserat = Inserate_ID)
+# get info ob mieten oder kaufen und Haus/Wohnung
+id_mieten_kaufen <- df %>% select(id_inserat, miete_kaufen, wohnung_haus) %>% distinct()
+# get initiale Miete
+init_preis <- df %>% select(id_inserat, kaltmiete, kaufpreis) %>% distinct()
+# join info
+monitor_data <- monitor_data %>%
+left_join(id_mieten_kaufen, by = c("id_inserat")) %>%
+left_join(init_preis, by = c("id_inserat"))
+monitor_data_miete <- monitor_data %>%
+filter(miete_kaufen == "miete")
+monitor_data_kaufen <- monitor_data %>%
+filter(miete_kaufen == "kaufen", wohnung_haus == "Wohnung")
+# Dauer des Monitorings
+timerange_days = difftime(max(monitor_data$Datum),  min(monitor_data$Datum), units = "days") # days
+timerange_days
+# Anzahl inserate
+anzahl_inserat_miete <- monitor_data_miete %>%
+distinct(id_inserat)
+print(paste0("Anzahl Inserate von Mietwohnungen im Zeitraum: ", nrow(anzahl_inserat_miete)))
+# Anzahl inserate
+anzahl_inserat_kaufen <- monitor_data_kaufen %>%
+distinct(id_inserat)
+print(paste0("Anzahl Inserate von Wohnungen zu kaufen im Zeitraum: ", nrow(anzahl_inserat_kaufen)))
+miete <- df %>% filter(miete_kaufen == "miete")
+vec_scale_preis <- c(min(miete$kaltmiete), max(miete$kaltmiete))
+pal <- colorNumeric(palette = "Reds", domain = vec_scale_preis, reverse = FALSE)
+miete %>%
+leaflet() %>%
+addProviderTiles("CartoDB") %>%
+addCircleMarkers(radius = 2, color = ~pal(kaufpreis),
+label = ~paste0(as.character(kaufpreis)," €" )) %>%
+addLegend(title = "Kaufpreis m²/€", pal = pal, values = vec_scale_preis,
+position = "bottomright")
+miete %>%
+leaflet() %>%
+addProviderTiles("CartoDB") %>%
+addCircleMarkers(radius = 2, color = ~pal(kaltmiete),
+label = ~paste0(as.character(kaltmiete)," €" )) %>%
+addLegend(title = "Kaufpreis m²/€", pal = pal, values = vec_scale_preis,
+position = "bottomright")
+#shapefile from https://datahub.io/de/dataset/postal-codes-de
+#http://www.suche-postleitzahl.org/downloads?download=zuordnung_plz_ort.csv
+#post questions here: http://gis.stackexchange.com/
+library(choroplethr)
+install.packages("choroplethr")
+setwd("/Users/oliverglatz/Desktop/Germany_shapefile/de_1km.shp/")
+setwd("/Users/oliverglatz/Desktop/Germany_shapefile/")
+ger_plz <- readOGR(dsn = ".", layer = "plz-gebiete")
+library(rgdal)
+install.packages("rgdal")

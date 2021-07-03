@@ -1,0 +1,10 @@
+"0","kaufen_df %>%
+  leaflet() %>%
+  addProviderTiles(""CartoDB"") %>%
+  addCircleMarkers(radius = 2, color = ~pal(kaufpreis),
+                   label = ~paste0(as.character(kaufpreis),"" €"" )) %>%
+  addLegend(title = ""Kaufpreis m²/€"", pal = pal, values = vec_scale_preis, 
+            position = ""bottomright"")
+"
+"2","Assuming ""lng"" and ""lat"" are longitude and latitude, respectively
+"

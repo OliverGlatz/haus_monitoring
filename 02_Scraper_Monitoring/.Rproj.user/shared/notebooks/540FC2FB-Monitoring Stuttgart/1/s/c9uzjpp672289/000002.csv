@@ -1,0 +1,7 @@
+"0","print(paste0(nrow(kaufen_senkung),"" von "",nrow(anzahl_inserat_kaufen), "" Inserate haben im durchschnitt um "",
+             round(mean(kaufen_senkung$neuer_preis),2), "" Euro ihren Preis gesenkt""))
+"
+"1","[1]"
+"1"," ""7 von 1106 Inserate haben im durchschnitt um -22428.57 Euro ihren Preis gesenkt"""
+"1","
+"

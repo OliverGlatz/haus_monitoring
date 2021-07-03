@@ -1,0 +1,23 @@
+# Laden der gespeicherten Inserate
+inserate_df <- read.csv("IDs_Datenbank.csv")
+inserate_df <- inserate_df %>% top_n(n=1)
+write.csv(inserate_df_nur_IDs, "IDs_Datenbank.csv", row.names = F)
+
+
+immo_links <- read.csv("immo_links.csv")
+immo_links <- immo_links %>% top_n(n=1)
+write.csv(immo_links, "immo_links.csv", row.names = F)
+
+
+
+
+library(readr)
+df_merged_alle_links <- read_delim("monitor_data.csv", 
+                           "~", escape_double = FALSE, col_types = cols(Inserate_ID = col_character(), 
+                                                                        Timestamp_scrape = col_datetime(format = "%Y-%m-%d %H:%M:%S")), 
+                           trim_ws = TRUE)
+
+
+df_merged_alle_links <- df_merged_alle_links %>% head(n=1)
+
+write.table(df_merged_alle_links, "monitor_data.csv", sep = "~", row.names = F)

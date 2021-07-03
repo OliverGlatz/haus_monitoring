@@ -1,0 +1,7 @@
+"0","print(paste0(nrow(miete_senkung),"" von "",nrow(anzahl_inserat_miete), "" Inserate haben im durchschnitt um "",
+             round(mean(miete_senkung$neuer_preis),2), "" Euro ihren Preis gesenkt""))
+"
+"1","[1]"
+"1"," ""22 von 4496 Inserate haben im durchschnitt um -65.59 Euro ihren Preis gesenkt"""
+"1","
+"

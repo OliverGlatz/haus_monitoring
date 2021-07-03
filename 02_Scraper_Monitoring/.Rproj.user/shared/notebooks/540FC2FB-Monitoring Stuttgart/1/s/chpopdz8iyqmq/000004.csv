@@ -1,0 +1,5 @@
+"0","ggplot(dates, aes(Datum)) + "
+"0","  geom_line(aes(y = anzahl_miete, colour = ""anzahl_miete"")) + "
+"0","  geom_point(aes(y = anzahl_miete, colour = ""anzahl_miete"")) +"
+"0","  geom_line(aes(y = anzahl_kaufen, colour = ""anzahl_kaufen"")) +"
+"0","  geom_point(aes(y = anzahl_kaufen, colour = ""anzahl_kaufen"")) "

@@ -1,0 +1,26 @@
+{
+    "collab_server" : "",
+    "contents" : "",
+    "created" : 1625304478803.000,
+    "dirty" : false,
+    "encoding" : "UTF-8",
+    "folds" : "",
+    "hash" : "1199935939",
+    "id" : "E9798C6E",
+    "lastKnownWriteTime" : 1625304964,
+    "last_content_update" : 1625304964818,
+    "path" : "~/Documents/GitHub/Immo_Monitoring_Haus/01_source/02_Scraper_Monitoring/Monitoring Stuttgart.Rmd",
+    "project_path" : "Monitoring Stuttgart.Rmd",
+    "properties" : {
+        "cursorPosition" : "224,0",
+        "last_setup_crc32" : "C1F90A93ae8414fd",
+        "scrollLine" : "193"
+    },
+    "read_only" : false,
+    "read_only_alternatives" : [
+    ],
+    "relative_order" : 7,
+    "source_on_save" : false,
+    "source_window" : "",
+    "type" : "r_markdown"
+}

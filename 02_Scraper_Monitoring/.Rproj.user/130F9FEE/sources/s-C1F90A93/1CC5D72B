@@ -1,0 +1,25 @@
+{
+    "collab_server" : "",
+    "contents" : "",
+    "created" : 1625300850942.000,
+    "dirty" : false,
+    "encoding" : "UTF-8",
+    "folds" : "",
+    "hash" : "3984015625",
+    "id" : "1CC5D72B",
+    "lastKnownWriteTime" : 1625304475,
+    "last_content_update" : 1625304475359,
+    "path" : "~/Documents/GitHub/Immo_Monitoring_Haus/01_source/02_Scraper_Monitoring/08_Monitoring.R",
+    "project_path" : "08_Monitoring.R",
+    "properties" : {
+        "cursorPosition" : "959,0",
+        "scrollLine" : "927"
+    },
+    "read_only" : false,
+    "read_only_alternatives" : [
+    ],
+    "relative_order" : 2,
+    "source_on_save" : false,
+    "source_window" : "",
+    "type" : "r_source"
+}
